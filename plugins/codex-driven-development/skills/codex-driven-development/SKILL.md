@@ -22,6 +22,35 @@ Claude orchestrates the full workflow — planning, task decomposition, dispatch
 - Task requires Claude-specific tools (MCP, web fetch, etc.) for implementation
 - User explicitly asks Claude to write the code
 
+## Configuration
+
+Each phase can be assigned to either Claude (subagent) or Codex (CLI agent). The defaults below work well for most workflows — skip this section to use them as-is.
+
+**To customize**, tell Claude at the start of a session which phases to reassign. For example: "Use codex-driven-development but have Claude do the code reviews instead of Codex."
+
+| Phase | Default | Options | Notes |
+|-------|---------|---------|-------|
+| Planning | **Claude** | Claude only | Codex agents cannot plan — they work non-interactively |
+| Plan Review | **Claude agent** | Claude agent only | Requires codebase understanding and judgment |
+| Rules Injection | **Claude** | Claude only | Reads CLAUDE.md files from the local environment |
+| Implementation | **Codex** | Codex or Claude agent | Codex is default; use Claude for tasks needing MCP/web tools |
+| Spec Review | **Codex** | Codex or Claude agent | Claude agents can cross-reference more context |
+| Quality Review | **Codex** | Codex or Claude agent | Claude agents have access to the code-reviewer skill |
+| Retry/Escalation | **Claude** | Claude only | Orchestration logic — always the coordinator |
+
+**When overriding to Claude agents**, dispatch via the Agent tool instead of `codex exec`. Use the same prompt templates but dispatch as:
+
+```
+Agent tool (general-purpose):
+  description: "[phase] for Task N"
+  prompt: [same prompt content as the Codex version]
+```
+
+**When to override defaults:**
+- Use Claude for implementation when tasks need MCP servers, web fetch, or other Claude-specific tools
+- Use Claude for reviews when you want access to the `superpowers:code-reviewer` agent or broader codebase context
+- Use Codex for everything code-related when you want maximum speed and cost efficiency
+
 ## Phase 1: Planning
 
 **Claude writes the entire plan. Codex agents never plan.**
@@ -48,6 +77,94 @@ Follow the same planning process as superpowers:writing-plans:
 ```
 
 Task structure follows superpowers:writing-plans format — steps with checkboxes, exact code, exact commands.
+
+## Phase 1.5: Plan Review
+
+**Claude agents review the plan. This happens BEFORE any Codex agent is dispatched.**
+
+After writing the complete plan, dispatch a Claude subagent to review it. The plan reviewer checks for completeness, spec alignment, task decomposition quality, and whether a Codex agent could actually follow it without getting stuck.
+
+### Plan Review Loop
+
+```dot
+digraph plan_review {
+    "Plan written" [shape=box];
+    "Dispatch Claude plan reviewer" [shape=box style=filled fillcolor=lightblue];
+    "Approved?" [shape=diamond];
+    "Fix issues (same session)" [shape=box style=filled fillcolor=lightblue];
+    "Iterations < 3?" [shape=diamond];
+    "Ask user for guidance" [shape=box style=filled fillcolor=lightsalmon];
+    "Proceed to Codex dispatch" [shape=box style=filled fillcolor=lightgreen];
+
+    "Plan written" -> "Dispatch Claude plan reviewer";
+    "Dispatch Claude plan reviewer" -> "Approved?";
+    "Approved?" -> "Proceed to Codex dispatch" [label="yes"];
+    "Approved?" -> "Fix issues (same session)" [label="no"];
+    "Fix issues (same session)" -> "Iterations < 3?";
+    "Iterations < 3?" -> "Dispatch Claude plan reviewer" [label="yes — re-review"];
+    "Iterations < 3?" -> "Ask user for guidance" [label="no — 3 rejections"];
+}
+```
+
+### Plan Reviewer Prompt
+
+Dispatch a Claude subagent (NOT Codex) with:
+
+```
+Agent tool (general-purpose):
+  description: "Review implementation plan"
+  prompt: |
+    You are reviewing an implementation plan that will be executed by Codex CLI agents (not humans, not Claude).
+
+    **Plan to review:** [PLAN_FILE_PATH]
+
+    ## What to Check
+
+    | Category | What to Look For |
+    |----------|------------------|
+    | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
+    | Spec Alignment | Plan covers all requirements, no major scope creep |
+    | Task Decomposition | Tasks have clear boundaries, each is independently implementable |
+    | Codex-Readiness | Could a Codex agent follow each task WITHOUT asking questions? |
+    | Code Completeness | Every task has exact file paths, complete code, and test commands |
+    | Dependencies | Tasks ordered correctly, no circular or missing dependencies |
+
+    ## Codex-Specific Concerns
+
+    Codex agents cannot:
+    - Ask clarifying questions mid-task (they work non-interactively)
+    - Read the full plan file (they only see the task text pasted into their prompt)
+    - Access context from other tasks (each dispatch is isolated)
+
+    So verify:
+    - Each task is self-contained with all needed context inline
+    - No task says "see Task N" or "as described above" — paste the info
+    - Code snippets are complete, not abbreviated with "..."
+    - File paths are exact, not relative or ambiguous
+
+    ## Calibration
+
+    Only flag issues that would cause a Codex agent to fail or produce wrong output.
+    Minor wording and stylistic preferences are NOT issues.
+    Approve unless there are serious gaps.
+
+    ## Output Format
+
+    **Status:** Approved | Issues Found
+
+    **Issues (if any):**
+    - [Task X, Step Y]: [specific issue] — [why a Codex agent would fail]
+
+    **Recommendations (advisory, do not block approval):**
+    - [suggestions for improvement]
+```
+
+### Review Rules
+
+- **Same Claude session fixes issues** — the orchestrator (you) fixes the plan based on reviewer feedback, then re-dispatches the reviewer
+- **Max 3 review iterations** — if the plan is still rejected after 3 rounds, ask the user for guidance
+- **Reviewer is advisory** — if you believe feedback is incorrect, explain your reasoning and proceed. But you must justify it.
+- **Never skip plan review** — even for "simple" plans. Codex agents can't ask questions, so the plan must be airtight.
 
 ## Phase 2: Codex Dispatch
 
@@ -392,8 +509,14 @@ digraph full_process {
     "Dispatch Codex final reviewer\nfor entire implementation" [shape=box];
     "Report to user" [shape=doublecircle];
 
+    "Claude plan review\n(Phase 1.5)" [shape=box style=filled fillcolor=lightblue];
+    "Plan approved?" [shape=diamond];
+
     "User provides task" -> "Claude plans\n(Phase 1)";
-    "Claude plans\n(Phase 1)" -> "Extract tasks from plan";
+    "Claude plans\n(Phase 1)" -> "Claude plan review\n(Phase 1.5)";
+    "Claude plan review\n(Phase 1.5)" -> "Plan approved?";
+    "Plan approved?" -> "Extract tasks from plan" [label="yes"];
+    "Plan approved?" -> "Claude plans\n(Phase 1)" [label="no — fix issues"];
     "Extract tasks from plan" -> "Select model + reasoning\nfor task complexity";
     "Select model + reasoning\nfor task complexity" -> "Dispatch Codex implementer\n(codex exec)";
     "Dispatch Codex implementer\n(codex exec)" -> "Read implementer output";
@@ -434,7 +557,8 @@ After each `codex exec`, Claude must:
 
 **Never:**
 - Let Codex agents plan or decompose tasks (Claude plans, Codex implements)
-- Skip either review stage (spec compliance AND code quality are both required)
+- Skip plan review before dispatching Codex agents
+- Skip either code review stage (spec compliance AND code quality are both required)
 - Dispatch multiple Codex implementers in parallel on the same repo (file conflicts)
 - Retry more than 3 times at the same model without escalating
 - Escalate past `xhigh` reasoning without asking the user
@@ -444,6 +568,7 @@ After each `codex exec`, Claude must:
 - Dispatch Codex without injecting relevant CLAUDE.md project rules
 
 **Always:**
+- Run Claude plan review (Phase 1.5) before any Codex dispatch
 - Paste full task text into the Codex prompt (don't reference plan file paths)
 - Include reviewer feedback verbatim when re-dispatching
 - Track attempt count per task for retry logic
@@ -469,6 +594,7 @@ After each `codex exec`, Claude must:
 | Phase | Who | What |
 |-------|-----|------|
 | Planning | Claude | Write full implementation plan with bite-sized tasks |
+| Plan Review | Claude agent | Verify plan is complete, codex-ready, and self-contained |
 | Rules Injection | Claude | Read CLAUDE.md files, extract relevant rules for Codex prompts |
 | Dispatch | Claude | Select model/reasoning, construct prompt with rules + task, run `codex exec` |
 | Implement | Codex | Write code and tests — no git commands, structured TASK REPORT output |

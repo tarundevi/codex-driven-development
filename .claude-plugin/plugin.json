@@ -1,0 +1,7 @@
+{
+  "name": "codex-driven-development",
+  "description": "Claude orchestrates planning and review while Codex CLI agents write the actual code, with model selection based on task complexity and automated review cycles",
+  "author": {
+    "name": "tarundevi"
+  }
+}

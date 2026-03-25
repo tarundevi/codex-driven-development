@@ -1,6 +1,6 @@
 # Codex-Driven Development
 
-A Claude Code skill that uses Claude as an orchestrator to plan work and dispatch [OpenAI Codex CLI](https://github.com/openai/codex) agents to write the actual code.
+A Claude Code plugin that uses Claude as an orchestrator to plan work and dispatch [OpenAI Codex CLI](https://github.com/openai/codex) agents to write the actual code.
 
 ## How It Works
 
@@ -36,20 +36,42 @@ Failed review → retry up to 3x at same model → escalate model → ask user.
 
 ## Install
 
+### As a Claude Code plugin (recommended)
+
+```
+/plugins install codex-driven-development@tarundevi
+```
+
+### Manual install
+
 ```bash
-git clone https://github.com/tarundevi/codex-driven-development.git ~/.claude/skills/codex-driven-development
+git clone https://github.com/tarundevi/codex-driven-development.git ~/.claude/plugins/local/codex-driven-development
 ```
 
 ## Usage
 
-The skill activates automatically when Claude detects a multi-step implementation task where you want Codex agents to write the code. You can also invoke it directly:
+The skill shows up in your skills list once installed. You can invoke it with:
 
 ```
 Use codex-driven-development to implement this feature
 ```
 
+Or reference it when asking Claude to build something:
+
+```
+Plan and build X using Codex agents to write the code
+```
+
 ## Updating
 
+### Plugin
+
+```
+/plugins update codex-driven-development@tarundevi
+```
+
+### Manual
+
 ```bash
-cd ~/.claude/skills/codex-driven-development && git pull
+cd ~/.claude/plugins/local/codex-driven-development && git pull
 ```

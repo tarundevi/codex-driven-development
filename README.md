@@ -32,6 +32,7 @@ A Claude Code plugin that uses Claude as an orchestrator to plan work and dispat
 | Phase | Who | What |
 |-------|-----|------|
 | Planning | Claude | Writes full implementation plan with bite-sized tasks |
+| Plan Review | Claude agent | Verifies plan is complete, codex-ready, and self-contained |
 | Rules Injection | Claude | Reads CLAUDE.md files, extracts relevant coding rules for Codex prompts |
 | Dispatch | Claude | Selects model/reasoning per task complexity, runs `codex exec` |
 | Implement | Codex | Writes code and tests — no git commands, structured report output |
@@ -53,6 +54,33 @@ A Claude Code plugin that uses Claude as an orchestrator to plan work and dispat
 ### Retry & Escalation
 
 Failed review → retry up to 3x at same model → escalate model → ask user.
+
+### Plan Review
+
+Before any Codex agent is dispatched, a Claude subagent reviews the plan to verify:
+- All tasks are self-contained (Codex agents can't ask questions mid-task)
+- Code snippets are complete, not abbreviated
+- File paths are exact, dependencies are ordered correctly
+- Each task has enough context inline — no "see Task N" references
+
+Up to 3 review iterations before escalating to the user.
+
+## Configuration
+
+Each phase can be assigned to either Claude or Codex. The defaults above work well for most workflows — override by telling Claude at the start of a session:
+
+```
+Use codex-driven-development but have Claude do the code reviews instead of Codex
+```
+
+| Phase | Default | Overridable? |
+|-------|---------|--------------|
+| Planning | Claude | No — Codex can't plan |
+| Plan Review | Claude agent | No — requires judgment |
+| Implementation | Codex | Yes — use Claude for MCP/web-dependent tasks |
+| Spec Review | Codex | Yes — Claude has broader context access |
+| Quality Review | Codex | Yes — Claude has code-reviewer skill |
+| Retry/Escalation | Claude | No — orchestration logic |
 
 ## Usage
 

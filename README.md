@@ -2,6 +2,31 @@
 
 A Claude Code plugin that uses Claude as an orchestrator to plan work and dispatch [OpenAI Codex CLI](https://github.com/openai/codex) agents to write the actual code.
 
+## Install
+
+### Step 1: Add the marketplace
+
+```
+/plugin marketplace add tarundevi/codex-driven-development
+```
+
+### Step 2: Install the plugin
+
+```
+/plugin install codex-driven-development
+```
+
+### Step 3: Reload plugins
+
+```
+/reload-plugins
+```
+
+## Prerequisites
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and configured
+- [Codex CLI](https://github.com/openai/codex) installed and configured (`npm install -g @openai/codex`)
+
 ## How It Works
 
 | Phase | Who | What |
@@ -29,25 +54,6 @@ A Claude Code plugin that uses Claude as an orchestrator to plan work and dispat
 
 Failed review → retry up to 3x at same model → escalate model → ask user.
 
-## Prerequisites
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and configured
-- [Codex CLI](https://github.com/openai/codex) installed and configured (`npm install -g @openai/codex`)
-
-## Install
-
-### As a Claude Code plugin (recommended)
-
-```
-/plugins install codex-driven-development@tarundevi
-```
-
-### Manual install
-
-```bash
-git clone https://github.com/tarundevi/codex-driven-development.git ~/.claude/plugins/local/codex-driven-development
-```
-
 ## Usage
 
 The skill shows up in your skills list once installed. You can invoke it with:
@@ -64,14 +70,6 @@ Plan and build X using Codex agents to write the code
 
 ## Updating
 
-### Plugin
-
 ```
-/plugins update codex-driven-development@tarundevi
-```
-
-### Manual
-
-```bash
-cd ~/.claude/plugins/local/codex-driven-development && git pull
+/plugin marketplace update codex-driven-development
 ```

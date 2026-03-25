@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "codex-driven-development",
-      "source": "./",
+      "source": "./plugins/codex-driven-development",
       "description": "Claude orchestrates planning and review while Codex CLI agents write the actual code, with model selection based on task complexity and automated review cycles"
     }
   ]

@@ -1,0 +1,8 @@
+{
+  "name": "codex-driven-development",
+  "description": "Claude orchestrates planning and review while Codex CLI agents write the actual code",
+  "version": "1.0.0",
+  "author": {
+    "name": "tarundevi"
+  }
+}

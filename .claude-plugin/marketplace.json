@@ -1,0 +1,16 @@
+{
+  "name": "codex-driven-development",
+  "owner": {
+    "name": "tarundevi"
+  },
+  "metadata": {
+    "description": "Claude orchestrates planning and review while Codex CLI agents write the code"
+  },
+  "plugins": [
+    {
+      "name": "codex-driven-development",
+      "source": "./",
+      "description": "Claude orchestrates planning and review while Codex CLI agents write the actual code, with model selection based on task complexity and automated review cycles"
+    }
+  ]
+}

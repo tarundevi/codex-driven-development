@@ -173,15 +173,15 @@ Agent tool (general-purpose):
 ```bash
 codex exec \
   --model <model> \
-  -c 'model_reasoning_effort = "<level>"' \
-  --full-auto \
+  -c 'model_reasoning_effort="<level>"' \
+  -s workspace-write \
   "<prompt>"
 ```
 
 Key flags:
 - `--model` / `-m`: Select model (see Model Selection below)
-- `-c 'model_reasoning_effort = "<level>"'`: Set reasoning effort
-- `--full-auto`: Non-interactive with workspace write access
+- `-c 'model_reasoning_effort="<level>"'`: Set reasoning effort
+- `-s workspace-write`: Non-interactive with workspace write access (replaces deprecated `--full-auto`)
 - `-C <dir>`: Set working directory (if different from current)
 
 ### Injecting Project Rules
@@ -216,24 +216,24 @@ digraph model_selection {
     "Mechanical?\n(1-2 files, clear spec,\nno design decisions)" [shape=diamond];
     "Integration?\n(multi-file, patterns,\nmoderate judgment)" [shape=diamond];
 
-    "gpt-5.4-mini\nreasoning: low" [shape=box style=filled fillcolor=lightgreen];
-    "gpt-5.4\nreasoning: medium" [shape=box style=filled fillcolor=lightyellow];
-    "gpt-5.4\nreasoning: high" [shape=box style=filled fillcolor=lightsalmon];
+    "gpt-5.5-mini\nreasoning: low" [shape=box style=filled fillcolor=lightgreen];
+    "gpt-5.5\nreasoning: medium" [shape=box style=filled fillcolor=lightyellow];
+    "gpt-5.5\nreasoning: high" [shape=box style=filled fillcolor=lightsalmon];
 
     "Assess task" -> "Mechanical?\n(1-2 files, clear spec,\nno design decisions)";
-    "Mechanical?\n(1-2 files, clear spec,\nno design decisions)" -> "gpt-5.4-mini\nreasoning: low" [label="yes"];
+    "Mechanical?\n(1-2 files, clear spec,\nno design decisions)" -> "gpt-5.5-mini\nreasoning: low" [label="yes"];
     "Mechanical?\n(1-2 files, clear spec,\nno design decisions)" -> "Integration?\n(multi-file, patterns,\nmoderate judgment)" [label="no"];
-    "Integration?\n(multi-file, patterns,\nmoderate judgment)" -> "gpt-5.4\nreasoning: medium" [label="yes"];
-    "Integration?\n(multi-file, patterns,\nmoderate judgment)" -> "gpt-5.4\nreasoning: high" [label="no — complex/architectural"];
+    "Integration?\n(multi-file, patterns,\nmoderate judgment)" -> "gpt-5.5\nreasoning: medium" [label="yes"];
+    "Integration?\n(multi-file, patterns,\nmoderate judgment)" -> "gpt-5.5\nreasoning: high" [label="no — complex/architectural"];
 }
 ```
 
 | Task Type | Model | Reasoning | When |
 |-----------|-------|-----------|------|
-| Mechanical | `gpt-5.4-mini` | `low` | Isolated function, clear spec, 1-2 files, no design decisions |
-| Standard | `gpt-5.4` | `medium` | Multi-file changes, pattern matching, moderate judgment |
-| Complex | `gpt-5.4` | `high` | Architectural decisions, cross-cutting concerns, debugging |
-| Review | `gpt-5.4` | `medium` | All review tasks (spec compliance + code quality) |
+| Mechanical | `gpt-5.5-mini` | `low` | Isolated function, clear spec, 1-2 files, no design decisions |
+| Standard | `gpt-5.5` | `medium` | Multi-file changes, pattern matching, moderate judgment |
+| Complex | `gpt-5.5` | `high` | Architectural decisions, cross-cutting concerns, debugging |
+| Review | `gpt-5.5` | `medium` | All review tasks (spec compliance + code quality) |
 
 ### Implementer Prompt Template
 
@@ -289,9 +289,9 @@ If BLOCKED: describe specifically what you're stuck on, what you tried, and what
 
 ```bash
 codex exec \
-  --model gpt-5.4-mini \
-  -c 'model_reasoning_effort = "low"' \
-  --full-auto \
+  --model gpt-5.5-mini \
+  -c 'model_reasoning_effort="low"' \
+  -s workspace-write \
   "You are implementing Task 1: Add input validation to the parser.
 
 ## Task Description
@@ -353,9 +353,9 @@ Dispatch a Codex agent to verify the implementation matches the spec:
 
 ```bash
 codex exec \
-  --model gpt-5.4 \
-  -c 'model_reasoning_effort = "medium"' \
-  --full-auto \
+  --model gpt-5.5 \
+  -c 'model_reasoning_effort="medium"' \
+  -s workspace-write \
   "You are reviewing whether Task N's implementation matches its specification.
 
 ## What Was Requested
@@ -387,9 +387,9 @@ Only dispatch after spec compliance passes:
 
 ```bash
 codex exec \
-  --model gpt-5.4 \
-  -c 'model_reasoning_effort = "medium"' \
-  --full-auto \
+  --model gpt-5.5 \
+  -c 'model_reasoning_effort="medium"' \
+  -s workspace-write \
   "You are reviewing code quality for Task N.
 
 ## What Was Built
@@ -438,9 +438,9 @@ One "attempt" = dispatch implementer + run both reviews. Track attempt count per
 
 1. **Review fails (attempt < 3)** → Re-dispatch implementer with the SAME model, including the reviewer's feedback verbatim in the prompt. "The reviewer found these issues: [feedback]. Fix them."
 2. **3 failed attempts at same model** → Escalate model:
-   - `gpt-5.4-mini` → `gpt-5.4` with `medium` reasoning
-   - `gpt-5.4` medium → `gpt-5.4` with `high` reasoning
-   - `gpt-5.4` high → `gpt-5.4` with `xhigh` reasoning
+   - `gpt-5.5-mini` → `gpt-5.5` with `medium` reasoning
+   - `gpt-5.5` medium → `gpt-5.5` with `high` reasoning
+   - `gpt-5.5` high → `gpt-5.5` with `xhigh` reasoning
    After escalation, reset attempt counter to 0 for the new model level. Allow up to 3 attempts at the escalated level.
 3. **Escalated model still fails after 3 attempts** → Stop and ask the user. Present: what was attempted across all levels, what failed, all reviewer feedback.
 
@@ -448,9 +448,9 @@ One "attempt" = dispatch implementer + run both reviews. Track attempt count per
 
 ```bash
 codex exec \
-  --model gpt-5.4 \
-  -c 'model_reasoning_effort = "medium"' \
-  --full-auto \
+  --model gpt-5.5 \
+  -c 'model_reasoning_effort="medium"' \
+  -s workspace-write \
   "You are FIXING Task N: [task name]
 
 ## Original Task
@@ -573,7 +573,7 @@ After each `codex exec`, Claude must:
 - Include reviewer feedback verbatim when re-dispatching
 - Track attempt count per task for retry logic
 - Run spec compliance review BEFORE code quality review
-- Use `--full-auto` flag for non-interactive execution
+- Use `-s workspace-write` flag for non-interactive execution (replaces deprecated `--full-auto`)
 - Read and inject relevant CLAUDE.md rules into every Codex prompt
 - Independently verify test results after implementer reports DONE
 - Require structured `=== TASK REPORT ===` output from every Codex agent

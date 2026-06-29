@@ -46,10 +46,10 @@ A Claude Code plugin that uses Claude as an orchestrator to plan work and dispat
 
 | Task Type | Model | Reasoning |
 |-----------|-------|-----------|
-| Mechanical (1-2 files, clear spec) | `gpt-5.4-mini` | `low` |
-| Standard (multi-file, moderate judgment) | `gpt-5.4` | `medium` |
-| Complex (architectural, cross-cutting) | `gpt-5.4` | `high` |
-| Review | `gpt-5.4` | `medium` |
+| Mechanical (1-2 files, clear spec) | `gpt-5.5-mini` | `low` |
+| Standard (multi-file, moderate judgment) | `gpt-5.5` | `medium` |
+| Complex (architectural, cross-cutting) | `gpt-5.5` | `high` |
+| Review | `gpt-5.5` | `medium` |
 
 ### Retry & Escalation
 

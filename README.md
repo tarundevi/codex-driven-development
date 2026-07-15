@@ -34,7 +34,7 @@ A Claude Code plugin that uses Claude as an orchestrator to plan work and dispat
 | Planning | Claude | Writes full implementation plan with bite-sized tasks |
 | Plan Review | Claude agent | Verifies plan is complete, codex-ready, and self-contained |
 | Rules Injection | Claude | Reads CLAUDE.md files, extracts relevant coding rules for Codex prompts |
-| Dispatch | Claude | Selects model/reasoning per task complexity, runs `codex exec` |
+| Dispatch | Claude | Selects model/reasoning per task complexity or saved config, runs `codex exec` |
 | Implement | Codex | Writes code and tests — no git commands, structured report output |
 | Verify | Claude | Parses report, runs tests independently, checks git diff |
 | Spec Review | Codex | Verifies implementation matches spec (PASS/FAIL) |
@@ -42,7 +42,7 @@ A Claude Code plugin that uses Claude as an orchestrator to plan work and dispat
 | Retry | Claude | Re-dispatches with feedback, escalates model if needed |
 | Commit | User | All git commits are manual |
 
-### Model Selection
+### Default Model Selection
 
 | Task Type | Model | Reasoning |
 |-----------|-------|-----------|
@@ -50,6 +50,8 @@ A Claude Code plugin that uses Claude as an orchestrator to plan work and dispat
 | Standard (multi-file, moderate judgment) | `gpt-5.5` | `medium` |
 | Complex (architectural, cross-cutting) | `gpt-5.5` | `high` |
 | Review | `gpt-5.5` | `medium` |
+
+These defaults are now overrideable. If the user saves a profile with `/cdd-config`, Claude should load that profile first and only fall back to the table above for missing entries.
 
 ### Retry & Escalation
 
@@ -82,6 +84,28 @@ Use codex-driven-development but have Claude do the code reviews instead of Code
 | Quality Review | Codex | Yes — Claude has code-reviewer skill |
 | Retry/Escalation | Claude | No — orchestration logic |
 
+### Model Profile Configuration
+
+Use the included slash command to save a persistent model profile:
+
+```text
+/cdd-config
+```
+
+Or refresh the profile against the current local Codex installation:
+
+```text
+/cdd-config refresh
+```
+
+This writes:
+
+```text
+~/.claude/plugins/codex-driven-development/config.json
+```
+
+The command tells Claude to inspect the installed `codex` CLI before recommending defaults, so the configuration flow can adapt when your local Codex installation changes. The saved profile is then used for future `codex-driven-development` runs unless you override it in the current conversation.
+
 ## Usage
 
 The skill shows up in your skills list once installed. You can invoke it with:
@@ -94,6 +118,12 @@ Or reference it when asking Claude to build something:
 
 ```
 Plan and build X using Codex agents to write the code
+```
+
+To change the default Codex models used by the workflow:
+
+```text
+/cdd-config
 ```
 
 ## Updating

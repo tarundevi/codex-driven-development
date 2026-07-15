@@ -1,6 +1,6 @@
 ---
 name: codex-driven-development
-description: Use when executing multi-step implementation tasks where Claude orchestrates planning and Codex CLI agents write the actual code, with model selection based on task complexity and automated review cycles
+description: Use when executing multi-step implementation tasks where Claude orchestrates planning and Codex CLI agents write the actual code, with configurable model profiles and automated review cycles
 ---
 
 # Codex-Driven Development
@@ -50,6 +50,27 @@ Agent tool (general-purpose):
 - Use Claude for implementation when tasks need MCP servers, web fetch, or other Claude-specific tools
 - Use Claude for reviews when you want access to the `superpowers:code-reviewer` agent or broader codebase context
 - Use Codex for everything code-related when you want maximum speed and cost efficiency
+
+### Saved Model Profile
+
+Before dispatching any Codex agent, read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/codex-driven-development/config.json` if it exists.
+
+If present, use its `profiles` block to choose model + reasoning for:
+
+- `mechanical`
+- `standard`
+- `complex`
+- `review`
+
+Priority order for model selection:
+
+1. Explicit user instruction in the current conversation
+2. Saved plugin config from `/cdd-config`
+3. Built-in defaults in this skill
+
+If the saved config is invalid or missing fields, fall back only for the missing entries rather than ignoring the entire file.
+
+Tell users to run `/cdd-config` when they want to refresh model choices to match their current Codex installation or switch to a custom profile.
 
 ## Phase 1: Planning
 
@@ -234,6 +255,8 @@ digraph model_selection {
 | Standard | `gpt-5.5` | `medium` | Multi-file changes, pattern matching, moderate judgment |
 | Complex | `gpt-5.5` | `high` | Architectural decisions, cross-cutting concerns, debugging |
 | Review | `gpt-5.5` | `medium` | All review tasks (spec compliance + code quality) |
+
+These are defaults, not hard requirements. If the saved plugin config provides different models, use the saved values instead of this table.
 
 ### Implementer Prompt Template
 
